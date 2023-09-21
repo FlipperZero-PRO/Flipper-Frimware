@@ -1,0 +1,59 @@
+name: Xtreme Firmware Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      Uninstall_Games:
+        description: 'Uninstall Games?'
+        required: true
+        default: 'yes'
+        type: string
+      Uninstall_Apps:
+        description: 'Uninstall Apps?'
+        required: true
+        default: 'no'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.FLIPPER_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential
+
+      - name: Download firmware
+        run: |
+          git clone https://github.com/Flipper-XFW/Xtreme-Firmware
+
+      - name: Run Uninstall_Games
+        if: ${{ github.event.inputs.Uninstall_Games == 'yes' }}
+        run: |
+          chmod +x Uninstall_Games.sh
+          ./Uninstall_Games.sh
+
+      - name: Run Uninstall_Apps
+        if: ${{ github.event.inputs.Uninstall_Apps == 'yes' }}
+        run: |
+          chmod +x Uninstall_Apps.sh
+          ./Uninstall_Apps.sh
+
+      - name: Compiling Flipper Firmware
+        run: |
+          cd Xtreme-Firmware
+          ./fbt COMPACT=1 DEBUG=0 updater_package
+
+      - name: Upload Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Xtreme-Firmware/dist/f7-C/*.tgz
+            Xtreme-Firmware/dist/f7-C/*.dfu
+          name: Xtreme Firmware
+          tag_name: main
