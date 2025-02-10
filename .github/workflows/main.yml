@@ -1,0 +1,47 @@
+name: Momentum Firmware Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      Uninstall_Apps:
+        description: 'Uninstall Apps?'
+        required: true
+        default: 'no'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.FLIPPER_TOKEN }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential
+
+      - name: Download firmware
+        run: |
+          git clone https://github.com/Next-Flip/Momentum-Firmware.git
+
+      - name: Run Uninstall_Apps
+        if: ${{ github.event.inputs.Uninstall_Apps == 'yes' }}
+        run: |
+          chmod +x Uninstall_Apps.sh
+          ./Uninstall_Apps.sh
+
+      - name: Compiling Flipper Firmware
+        run: |
+          cd Momentum-Firmware
+          ./fbt COMPACT=1 DEBUG=0 updater_package
+
+      - name: Upload Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            Momentum-Firmware/dist/f7-C/*.tgz
+          name: Momentum Firmware
+          tag_name: main
